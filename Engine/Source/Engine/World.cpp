@@ -499,7 +499,6 @@ bool ContactAddedHandler(btManifoldPoint& cp,
 World::World() :
     mAmbientLightColor(DEFAULT_AMBIENT_LIGHT_COLOR),
     mShadowColor(DEFAULT_SHADOW_COLOR),
-    mActiveCamera(nullptr),
     mAudioReceiver(nullptr)
 {
     SCOPED_STAT("World()")
@@ -510,6 +509,12 @@ World::World() :
     mBroadphase = new btDbvtBroadphase();
     mSolver = new btSequentialImpulseConstraintSolver();
     mDynamicsWorld = new btDiscreteDynamicsWorld(mCollisionDispatcher, mBroadphase, mSolver, mCollisionConfig);
+    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
+    {
+        mActiveCamera.push_back(nullptr);
+
+    }
+
     mDynamicsWorld->setGravity(btVector3(0, -10, 0));
 
     mDefaultDynamicsWorld = mDynamicsWorld;
@@ -526,7 +531,7 @@ void World::Destroy()
     DestroyRootNode();
 
     OCT_ASSERT(mRootNode == nullptr);
-    mActiveCamera = nullptr;
+    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
 
     mDefaultDynamicsWorld = nullptr;
 
@@ -615,7 +620,7 @@ void World::SetRootNode(Node* node)
 
             mPersistingNodes.clear();
         }
-
+        SetNewActiveCamera();
         UpdateRenderSettings();
     }
 }
@@ -630,6 +635,7 @@ void World::DestroyRootNode()
         }
 
         mRootNode->Destroy();
+        ClearCameras();
         SetRootNode(nullptr);
     }
 }
@@ -1193,11 +1199,30 @@ void World::RegisterNode(Node* node, bool subRoot)
     }
     else if (nodeType == Camera3D::GetStaticType())
     {
-        if (mActiveCamera == nullptr ||
-            mActiveCamera->IsEditorCamera())
+        //check if enough cameras exist already
+        uint32_t activeScreens = 0;
+        for (uint32_t i = 0; i < ::GetNumWorlds(); ++i)
         {
-            mActiveCamera = node->As<Camera3D>();
+            for (uint32_t j = 0; j < ::GetNumScreens(); ++j)
+            {
+                if ((::GetWorld(i)->GetActiveCamera(j)) && !(::GetWorld(i)->GetActiveCamera(j)->IsEditorCamera())) ++activeScreens;
+            }
         }
+        //apply remaining active cameras to this world. This will never logically overflow.
+
+        for (uint32_t j = 0; j < ::GetNumScreens(); ++j)
+        {
+            if (activeScreens < ::GetNumScreens())
+            {
+                if ((!mActiveCamera[j]) || (GetActiveCamera(j)->IsEditorCamera()))
+                {
+                    mActiveCamera[j] = node->As<Camera3D>();
+                    ++activeScreens;
+                }
+            }
+            else j = 100; //nobody would put 101 screens on a console.... right?
+        }
+
     }
 
     if (subRoot)
@@ -1233,10 +1258,15 @@ void World::UnregisterNode(Node* node, bool subRoot)
         SetAudioReceiver(nullptr);
     }
 
-    if (node == mActiveCamera)
+
+    for (Camera3D* camera : mActiveCamera)
     {
-        SetActiveCamera(nullptr);
+        if (node == camera)
+        {
+            camera = nullptr;
+        }
     }
+
 
     if (subRoot)
     {
@@ -1295,7 +1325,6 @@ void World::Update(float deltaTime)
         mQueuedRootNode->Detach();
 
         DestroyRootNode();
-
         SetRootNode(mQueuedRootNode.Get());
 
         mQueuedRootNode.Reset();
@@ -1537,13 +1566,13 @@ Camera3D* World::GetMainCamera()
 	return highestPriority;
 }
 
-Camera3D* World::GetActiveCamera()
+Camera3D* World::GetActiveCamera(uint32_t screenIndex)
 {
 #if EDITOR
     // When in editor, the active camera is the EditorCamera unless
     // we are playing in editor (and not ejected).
-    if (!GetEditorState()->mPlayInEditor || 
-        GetEditorState()->mEjected)
+    if ((!GetEditorState()->mPlayInEditor ||
+        GetEditorState()->mEjected) && screenIndex == 0) //changing this for a camera array, only look at the editorcamera for the editor view, not for the preview
     {
         Camera3D* editorCam = GetEditorState()->GetEditorCamera();
 
@@ -1556,7 +1585,7 @@ Camera3D* World::GetActiveCamera()
     }
 #endif
 
-    return mActiveCamera;
+    return mActiveCamera[screenIndex];
 }
 
 Node3D* World::GetAudioReceiver()
@@ -1575,16 +1604,26 @@ Node3D* World::GetAudioReceiver()
     return nullptr;
 }
 
-void World::SetActiveCamera(Camera3D* activeCamera)
+void World::SetActiveCamera(Camera3D* activeCamera, uint32_t screenIndex)
 {
+    //LogDebug("Test");
+    if (screenIndex >= ::GetNumScreens())
+    {
+        LogDebug("Screen index cannot exceed screen count");
+        return;
+    }
 #if EDITOR
     if (GetEditorState()->mEditorCamera != activeCamera)
     {
-        mActiveCamera = activeCamera;
+        mActiveCamera[screenIndex] = activeCamera;
     }
 #else
-    mActiveCamera = activeCamera;
+    mActiveCamera[screenIndex] = activeCamera;
 #endif
+    //make it so other worlds cant have a camera on this screen
+    limitScreens(this, screenIndex);
+
+
 }
 
 void World::SetAudioReceiver(Node3D* newReceiver)
@@ -1709,7 +1748,6 @@ void World::LoadScene(const char* name, bool instant)
         if (scene != nullptr)
         {
             DestroyRootNode();
-
             NodePtr newRoot = scene->Instantiate();
             SetRootNode(newRoot.Get());
         }
@@ -1827,17 +1865,34 @@ Node* World::SpawnDefaultRoot()
     return mRootNode.Get();
 }
 
+void World::ClearCameras()
+{
+    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
+    {
+        if (mActiveCamera[i] != nullptr)
+        {
+            mActiveCamera[i] = nullptr;
+        }
 
 
+    }
+}
 
-
-
-
-
-
-
-
-
+void World::SetNewActiveCamera()
+{//the get main camera function is... interesting. but I will not be using it.
+    for (Node* node : GatherNodes())
+    {
+        if (node->As<Camera3D>())
+        {
+            //this will be a simple first found camera used. whatever.
+            for (Camera3D* camera : mActiveCamera)
+            {
+                camera = node->As<Camera3D>();
+                return;
+            }
+        }
+    }
+}
 
 
 

@@ -287,6 +287,11 @@ World* Renderer::GetCurrentWorld()
     return mCurrentWorld;
 }
 
+uint32_t Renderer::GetCurrentScreen()
+{
+    return mScreenIndex;
+}
+
 glm::vec2 Renderer::GetScreenResolution(int32_t screen)
 {
     glm::vec2 res = { 0.0f, 0.0f };
@@ -470,7 +475,7 @@ const std::vector<DebugDraw>& Renderer::GetDebugDraws() const
     return mDebugDraws;
 }
 
-void Renderer::GatherDrawData(World* world)
+void Renderer::GatherDrawData(World* world, uint32_t screen)
 {
     bool enable3D = mEnable3dRendering;
     bool enable2D = mEnable2dRendering;
@@ -504,7 +509,7 @@ void Renderer::GatherDrawData(World* world)
     mCollisionDraws.clear();
     mWidgetDraws.clear();
 
-    Camera3D* camera = world ? world->GetActiveCamera() : nullptr;
+    Camera3D* camera = world ? world->GetActiveCamera(screen) : nullptr;
 
     if (world != nullptr)
     {
@@ -739,7 +744,7 @@ static void SetLightData(LightData& lightData, Light3D* comp)
     }
 }
 
-void Renderer::GatherLightData(World* world)
+void Renderer::GatherLightData(World* world, uint32_t screen)
 {
     static std::vector<LightDistance2> sClosestLights;
     sClosestLights.clear();
@@ -752,7 +757,7 @@ void Renderer::GatherLightData(World* world)
     {
         float deltaTime = GetEngineState()->mGameDeltaTime;
         uint32_t lightLimit = glm::min<uint32_t>(mLightFadeLimit, MAX_LIGHTS_PER_DRAW);
-        Camera3D* camera = world->GetActiveCamera();
+        Camera3D* camera = world->GetActiveCamera(screen);
         glm::vec3 camPos = camera ? camera->GetWorldPosition() : glm::vec3(0.0f, 0.0f, 0.0f);
 
         // Step 1 - Determine the closest N lights
@@ -1227,14 +1232,17 @@ void Renderer::Render(World* world, int32_t screenIndex)
         }
     }
 
-    Camera3D* activeCamera = world->GetActiveCamera();
-
+    Camera3D* activeCamera = world->GetActiveCamera(screenIndex);
+#if EDITOR
+#else
+    //LogDebug(std::to_string(screenIndex).c_str());
+#endif
     // On 3DS especially, we want to cull before syncing with the GPU
     // otherwise it increases GPU idle time.
     {
         SCOPED_FRAME_STAT("Culling");
 
-        GatherDrawData(world);
+        GatherDrawData(world, screenIndex);
 
         if (enable3D)
         {
@@ -1243,7 +1251,7 @@ void Renderer::Render(World* world, int32_t screenIndex)
                 activeCamera->ComputeMatrices();
             }
 
-            GatherLightData(world);
+            GatherLightData(world, screenIndex);
 
             if (mFrustumCulling)
             {
@@ -1754,3 +1762,5 @@ glm::uvec4 Renderer::GetSceneViewport(int32_t screenIdx)
 
     return glm::uvec4(vx, vy, vw, vh);
 }
+
+

@@ -22,7 +22,9 @@ void Shutdown();
 void Quit();
 
 class World* GetWorld(int32_t index);
+void AddWorld();
 int32_t GetNumWorlds();
+uint32_t GetNumScreens();
 
 struct EngineState* GetEngineState();
 const struct EngineConfig* GetEngineConfig();
@@ -77,6 +79,8 @@ void ReadEngineConfig(std::string path = "");
 void ResetEngineConfig();
 
 void ReadCommandLineArgs(int32_t argc, char** argv);
+
+void limitScreens(World* world, uint32_t screenIndex);
 
 
 #if LUA_ENABLED

@@ -60,6 +60,7 @@ public:
     bool IsRenderingFirstScreen() const;
     bool IsRenderingLastScreen() const;
     World* GetCurrentWorld();
+    uint32_t GetCurrentScreen();
 
     glm::vec2 GetScreenResolution(int32_t screen = -1);
     glm::vec2 GetActiveScreenResolution();
@@ -126,6 +127,7 @@ public:
     void SetResolutionScale(float scale);
     float GetResolutionScale() const;
 
+
     uint32_t GetViewportX(int32_t screenIdx = -1);
     uint32_t GetViewportY(int32_t screenIdx = -1);
     uint32_t GetViewportWidth(int32_t screenIdx = -1);
@@ -181,8 +183,8 @@ private:
     void BeginFrame();
     void EndFrame();
 
-    void GatherDrawData(World* world);
-    void GatherLightData(World* world);
+    void GatherDrawData(World* world, uint32_t screen);
+    void GatherLightData(World* world, uint32_t screen);
     void RenderDraws(const std::vector<DrawData>& drawData);
     void RenderDraws(const std::vector<DrawData>& drawData, PipelineConfig pipelineConfig);
     void RenderDebugDraws(const std::vector<DebugDraw>& draws, PipelineConfig pipelineConfig = PipelineConfig::Count);
@@ -252,5 +254,6 @@ private:
 
     // Post Process
     bool mPostProcessEnables[(uint32_t)PostProcessPassId::Count] = { };
+
 
 };

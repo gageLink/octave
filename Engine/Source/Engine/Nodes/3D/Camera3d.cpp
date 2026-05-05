@@ -61,7 +61,7 @@ void Camera3D::GatherProperties(std::vector<Property>& outProps)
 void Camera3D::GatherProxyDraws(std::vector<DebugDraw>& inoutDraws)
 {
 #if DEBUG_DRAW_ENABLED
-    if (this != GetWorld()->GetActiveCamera())
+    if (this != GetWorld()->GetActiveCamera(Renderer::Get()->GetCurrentScreen()))
     {
         glm::mat4 transform = glm::rotate(DEGREES_TO_RADIANS * -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         transform = mTransform * transform;
@@ -416,3 +416,5 @@ const bool Camera3D::IsEditorCamera()
 
     return false;
 }
+
+

@@ -50,6 +50,7 @@ static EngineConfig sEngineConfig;
 
 static std::vector<World*> sWorlds;
 static Clock sClock;
+static int32_t sScreens = 1;
 
 // Default scene names to try when no explicit scene is specified
 static std::vector<std::string> sDefaultSceneNames = {
@@ -402,22 +403,24 @@ bool Initialize()
 
 #if EDITOR
     // Initialize FileWatcher for script hot-reloading
-    CreateFileWatcher();
-    if (GetFileWatcher())
-    {
-        GetFileWatcher()->Initialize();
-        GetFileWatcher()->SetFileChangeCallback(OnScriptFileChanged);
-        GetFileWatcher()->SetEnabled(GetEngineConfig()->mScriptHotReload);
-    }
+     CreateFileWatcher();
+     if (GetFileWatcher())
+     {
+         GetFileWatcher()->Initialize();
+         GetFileWatcher()->SetFileChangeCallback(OnScriptFileChanged);
+         GetFileWatcher()->SetEnabled(GetEngineConfig()->mScriptHotReload);
+     }
 #endif
 
     sClock.Start();
 
     sWorlds.push_back(new World());
 
+
 #if PLATFORM_3DS
     // So far only 3DS can support a second screen and we have a one-world-per-screen setup.
-    sWorlds.push_back(new World());
+    //sWorlds.push_back(new World());
+    ++sScreens;
 #endif
 
 
@@ -523,10 +526,10 @@ bool Update()
 
 #if EDITOR
     // Update FileWatcher for script hot-reloading
-    if (GetFileWatcher())
-    {
-        GetFileWatcher()->Update();
-    }
+     if (GetFileWatcher())
+     {
+         GetFileWatcher()->Update();
+     }
 #endif
 
     if (sEngineState.mSuspended)
@@ -605,10 +608,47 @@ bool Update()
     EditorImguiDraw();
 #endif
 
-    for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+    // for (uint32_t j = 0; j < GetNumScreens(); ++j)
+    // {
+    //     for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+    //     {
+    //             Renderer::Get()->Render(sWorlds[i], j);
+    //     }
+    //}
+
+    for (uint32_t j = 0; j < GetNumScreens(); ++j)
     {
-        Renderer::Get()->Render(sWorlds[i], i);
+        bool passed = false;
+        for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+        {
+            if ((sWorlds[i]->GetActiveCamera(j)) && !passed)
+            {
+                Renderer::Get()->Render(sWorlds[i], j);
+                passed = true;
+                #if EDITOR
+                #else
+                //LogDebug("testy %s, %s", std::to_string(i).c_str(),std::to_string(j).c_str());
+                #endif
+            }
+        }
+        if (!passed) //nothing rendered for this screen. i think just pass in a blank world and call it a day?
+        {
+            World* nullWorld = new World();
+            Renderer::Get()->Render(nullWorld, j);
+        }
     }
+    // for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+    // {
+    //     for (int32_t j = 0; j < GetNumScreens(); ++j) //all worlds have 4 active camera slots
+    //     {
+    //         if (sWorlds[i]->GetActiveCamera(j))
+    //         {
+    //             Renderer::Get()->Render(sWorlds[i], j);
+    //             //LogDebug("testy %s, %s", std::to_string(i).c_str(),std::to_string(j).c_str());
+    //         }
+    //     }
+    //
+    // }
 
     AssetManager::Get()->Update(realDeltaTime);
 
@@ -627,8 +667,8 @@ bool Update()
 void Shutdown()
 {
 #if EDITOR
-    // Shutdown FileWatcher first
-    DestroyFileWatcher();
+     //Shutdown FileWatcher first
+     DestroyFileWatcher();
 #endif
 
     NetworkManager::Get()->Shutdown();
@@ -691,6 +731,11 @@ World* GetWorld(int32_t index)
 int32_t GetNumWorlds()
 {
     return int32_t(sWorlds.size());
+}
+
+uint32_t GetNumScreens()
+{
+    return int32_t(sScreens);
 }
 
 EngineState* GetEngineState()
@@ -809,24 +854,24 @@ void LoadProject(const std::string& path, bool discoverAssets)
 
 #if EDITOR
     // Start watching the Scripts directory for hot-reloading
-    if (GetFileWatcher() && sEngineState.mProjectDirectory != "")
-    {
-        std::string scriptsDir = sEngineState.mProjectDirectory + "Scripts";
-        
-        // Check if Scripts directory exists by trying to open it as a directory
-        DirEntry dirEntry = {};
-        SYS_OpenDirectory(scriptsDir, dirEntry);
-        bool scriptsExists = dirEntry.mValid;
-        if (dirEntry.mValid)
-        {
-            SYS_CloseDirectory(dirEntry);
-        }
-        
-        if (scriptsExists)
-        {
-            GetFileWatcher()->WatchDirectory(scriptsDir, true);
-        }
-    }
+     if (GetFileWatcher() && sEngineState.mProjectDirectory != "")
+     {
+         std::string scriptsDir = sEngineState.mProjectDirectory + "Scripts";
+
+         // Check if Scripts directory exists by trying to open it as a directory
+         DirEntry dirEntry = {};
+         SYS_OpenDirectory(scriptsDir, dirEntry);
+         bool scriptsExists = dirEntry.mValid;
+         if (dirEntry.mValid)
+         {
+             SYS_CloseDirectory(dirEntry);
+         }
+
+         if (scriptsExists)
+         {
+             GetFileWatcher()->WatchDirectory(scriptsDir, true);
+         }
+     }
 #endif
 
 #if EDITOR
@@ -948,11 +993,11 @@ void ReloadAllScripts(bool restartComponents)
 void SetScriptHotReloadEnabled(bool enabled)
 {
 #if EDITOR
-    GetMutableEngineConfig()->mScriptHotReload = enabled;
-    if (GetFileWatcher())
-    {
-        GetFileWatcher()->SetEnabled(enabled);
-    }
+     GetMutableEngineConfig()->mScriptHotReload = enabled;
+     if (GetFileWatcher())
+     {
+         GetFileWatcher()->SetEnabled(enabled);
+     }
 #endif
 }
 
@@ -1272,4 +1317,19 @@ int main(int argc, char** argv)
 #else
     return 0;
 #endif
+}
+
+
+void limitScreens(World* world, uint32_t screenIndex)
+{
+    for (World* Planet : sWorlds)
+    {
+        if (Planet != world) Planet->SetActiveCamera(nullptr, screenIndex);
+    }
+}
+
+
+void AddWorld()
+{
+    sWorlds.push_back(new World());
 }

@@ -37,8 +37,9 @@ int World_Lua::Create(lua_State* L, World* world)
 int World_Lua::GetActiveCamera(lua_State* L)
 {
     World* world = CHECK_WORLD(L, 1);
+    int screen = CHECK_INTEGER(L, 2);
     
-    Camera3D* cameraComp = world->GetActiveCamera();
+    Camera3D* cameraComp = world->GetActiveCamera(screen);
 
     Node_Lua::Create(L, cameraComp);
     return 1;
@@ -56,10 +57,12 @@ int World_Lua::GetAudioReceiver(lua_State* L)
 
 int World_Lua::SetActiveCamera(lua_State* L)
 {
+
     World* world = CHECK_WORLD(L, 1);
     Camera3D* cameraComp = CHECK_CAMERA_3D(L, 2);
+    uint32_t screen = CHECK_INTEGER(L, 3);
 
-    world->SetActiveCamera(cameraComp);
+    world->SetActiveCamera(cameraComp, screen);
 
     return 0;
 }
