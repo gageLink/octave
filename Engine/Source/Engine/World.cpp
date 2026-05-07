@@ -530,7 +530,7 @@ void World::Destroy()
     DestroyRootNode();
 
     OCT_ASSERT(mRootNode == nullptr);
-    //for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
+    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
 
     mDefaultDynamicsWorld = nullptr;
 
@@ -633,7 +633,7 @@ void World::DestroyRootNode()
             ExtractPersistingNodes();
         }
         mRootNode->Destroy();
-        ClearCameras();
+        //ClearCameras();
         SetRootNode(nullptr);
     }
 }
@@ -1203,7 +1203,9 @@ void World::RegisterNode(Node* node, bool subRoot)
         {
             for (uint32_t j = 0; j < ::GetNumScreens(); ++j)
             {
-                if ((::GetWorld(i)->GetActiveCamera(j)) && !(::GetWorld(i)->GetActiveCamera(j)->IsEditorCamera())) ++activeScreens;
+                if ((::GetWorld(i)->GetActiveCamera(j))
+                    && !(::GetWorld(i)->GetActiveCamera(j)->IsEditorCamera())) //dont count editor cameras
+                        ++activeScreens;
             }
         }
         //apply camera to next screen that needs it.
@@ -1912,6 +1914,7 @@ bool World::ScreenTaken(int32_t screen)
         if (::GetWorld(i)->GetActiveCamera(screen))
         {
             if (::GetWorld(i)->GetActiveCamera(screen)->IsEditorCamera()) return false;
+            if (!::GetWorld(i)->GetActiveCamera(screen)->GetWorld() == ::GetWorld(i)) return false;
             return true;
         }
     }
