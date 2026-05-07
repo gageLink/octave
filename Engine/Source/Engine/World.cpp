@@ -1206,18 +1206,15 @@ void World::RegisterNode(Node* node, bool subRoot)
                 if ((::GetWorld(i)->GetActiveCamera(j)) && !(::GetWorld(i)->GetActiveCamera(j)->IsEditorCamera())) ++activeScreens;
             }
         }
-        //apply remaining active cameras to this world. This will never logically overflow.
-
+        //apply camera to next screen that needs it.
         for (uint32_t j = 0; j < ::GetNumScreens(); ++j)
         {
             if (activeScreens < ::GetNumScreens())
             {
                 if (!ScreenTaken(j))
                 {
-                    //LogDebug("test");
                     SetActiveCamera(node->As<Camera3D>(),j);
-                    //mActiveCamera[j] = node->As<Camera3D>();
-                    ++activeScreens;
+                    activeScreens = 100;
                 }
             }
             else j = 100; //nobody would put 101 screens on a console.... right?
