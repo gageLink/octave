@@ -499,7 +499,6 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
         }
     }
 #endif
-
     mShadowDraws.clear();
     mOpaqueDraws.clear();
     mSimpleShadowDraws.clear();
@@ -510,11 +509,9 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
     mWidgetDraws.clear();
 
     Camera3D* camera = world ? world->GetActiveCamera(screen) : nullptr;
-
     if (world != nullptr)
     {
         glm::vec3 cameraPos = camera ? camera->GetWorldPosition() : glm::vec3(0.0f, 0.0f, 0.0f);
-
         auto gatherDrawData = [&](Node* node) -> bool
         {
             if (!node->IsVisible())
@@ -533,7 +530,6 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
                 return true;
             }
 #endif
-
             if (enable3D &&
                 camera != nullptr &&
                 node->IsPrimitive3D())
@@ -612,7 +608,6 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
                     mWidgetDraws.push_back(data);
                 }
             }
-
 #if DEBUG_DRAW_ENABLED
             bool proxyActorEnabled = true;
 
@@ -638,7 +633,6 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
 
             return true;
         };
-
         if (world != nullptr)
         {
             if (world->GetRootNode() != nullptr)
@@ -660,7 +654,6 @@ void Renderer::GatherDrawData(World* world, uint32_t screen)
             }
 #endif
         }
-
         auto materialSort = [](const DrawData& l, const DrawData& r)
         {
             // Depthless materials should render last.
@@ -1231,7 +1224,6 @@ void Renderer::Render(World* world, int32_t screenIndex)
             }
         }
     }
-
     Camera3D* activeCamera = world->GetActiveCamera(screenIndex);
 #if EDITOR
 #else
@@ -1243,14 +1235,12 @@ void Renderer::Render(World* world, int32_t screenIndex)
         SCOPED_FRAME_STAT("Culling");
 
         GatherDrawData(world, screenIndex);
-
         if (enable3D)
         {
             if (activeCamera != nullptr)
             {
                 activeCamera->ComputeMatrices();
             }
-
             GatherLightData(world, screenIndex);
 
             if (mFrustumCulling)
@@ -1259,7 +1249,6 @@ void Renderer::Render(World* world, int32_t screenIndex)
             }
         }
     }
-
     // Still update UI and cull when minimized (to update animation and particle simulation)
     if (!GetEngineState()->mWindowMinimized)
     {
@@ -1284,7 +1273,6 @@ void Renderer::Render(World* world, int32_t screenIndex)
         for (uint32_t view = 0; view < numViews; ++view)
         {
             GFX_BeginView(view);
-
             uint32_t windowWidth = (mScreenIndex == 0) ? GetEngineState()->mWindowWidth : GetEngineState()->mSecondWindowWidth;
             uint32_t windowHeight = (mScreenIndex == 0) ? GetEngineState()->mWindowHeight : GetEngineState()->mSecondWindowHeight;
 
@@ -1404,7 +1392,6 @@ void Renderer::Render(World* world, int32_t screenIndex)
                 GFX_BeginRenderPass(RenderPassId::Clear);
                 GFX_EndRenderPass();
             }
-
             // ******************
             //  UI
             // ******************

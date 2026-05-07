@@ -608,35 +608,36 @@ bool Update()
     EditorImguiDraw();
 #endif
 
-    // for (uint32_t j = 0; j < GetNumScreens(); ++j)
-    // {
-    //     for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
-    //     {
-    //             Renderer::Get()->Render(sWorlds[i], j);
-    //     }
-    //}
-
     for (uint32_t j = 0; j < GetNumScreens(); ++j)
     {
-        bool passed = false;
         for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
         {
-            if ((sWorlds[i]->GetActiveCamera(j)) && !passed)
-            {
                 Renderer::Get()->Render(sWorlds[i], j);
-                passed = true;
-                #if EDITOR
-                #else
-                //LogDebug("testy %s, %s", std::to_string(i).c_str(),std::to_string(j).c_str());
-                #endif
-            }
-        }
-        if (!passed) //nothing rendered for this screen. i think just pass in a blank world and call it a day?
-        {
-            World* nullWorld = new World();
-            Renderer::Get()->Render(nullWorld, j);
         }
     }
+    //LogDebug("testy");
+    // for (uint32_t j = 0; j < GetNumScreens(); ++j)
+    // {
+    //     bool passed = false;
+    //     for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+    //     {
+    //         if ((sWorlds[i]->GetActiveCamera(j)) && !passed)
+    //         {
+    //             Renderer::Get()->Render(sWorlds[i], j);
+    //             passed = true;
+    //             #if EDITOR
+    //             #else
+    //             //LogDebug("testy %s, %s", std::to_string(i).c_str(),std::to_string(j).c_str());
+    //             #endif
+    //         }
+    //     }
+    //     if (!passed) //nothing rendered for this screen. i think just pass in a blank world and call it a day?
+    //     {
+    //         World* nullWorld = new World();
+    //         Renderer::Get()->Render(nullWorld, j);
+    //     }
+    // }
+    //LogDebug("testz");
     // for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
     // {
     //     for (int32_t j = 0; j < GetNumScreens(); ++j) //all worlds have 4 active camera slots

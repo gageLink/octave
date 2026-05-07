@@ -203,6 +203,7 @@ private:
     void ExtractPersistingNodes();
     void ClearCameras();
     void SetNewActiveCamera();
+    bool ScreenTaken(int32_t screen);
 
 private:
 

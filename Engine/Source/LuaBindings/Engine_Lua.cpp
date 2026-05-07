@@ -45,7 +45,6 @@ int Engine_Lua::GetWorld(lua_State* L)
     if (!lua_isnone(L, 1)) { worldIndex = CHECK_INDEX(L, 1); }
 
     World* world = ::GetWorld(worldIndex);
-
     World_Lua::Create(L, world);
     return 1;
 }

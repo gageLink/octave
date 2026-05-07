@@ -512,7 +512,6 @@ World::World() :
     for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
     {
         mActiveCamera.push_back(nullptr);
-
     }
 
     mDynamicsWorld->setGravity(btVector3(0, -10, 0));
@@ -531,7 +530,7 @@ void World::Destroy()
     DestroyRootNode();
 
     OCT_ASSERT(mRootNode == nullptr);
-    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
+    //for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
 
     mDefaultDynamicsWorld = nullptr;
 
@@ -606,6 +605,7 @@ void World::SetRootNode(Node* node)
             OCT_ASSERT(mRootNode->GetWorld() == nullptr);
 
             mRootNode->SetWorld(this, true);
+            //SetNewActiveCamera();
         }
 
         if (mRootNode != nullptr)
@@ -620,7 +620,6 @@ void World::SetRootNode(Node* node)
 
             mPersistingNodes.clear();
         }
-        SetNewActiveCamera();
         UpdateRenderSettings();
     }
 }
@@ -633,7 +632,6 @@ void World::DestroyRootNode()
         {
             ExtractPersistingNodes();
         }
-
         mRootNode->Destroy();
         ClearCameras();
         SetRootNode(nullptr);
@@ -1214,9 +1212,11 @@ void World::RegisterNode(Node* node, bool subRoot)
         {
             if (activeScreens < ::GetNumScreens())
             {
-                if ((!mActiveCamera[j]) || (GetActiveCamera(j)->IsEditorCamera()))
+                if (!ScreenTaken(j))
                 {
-                    mActiveCamera[j] = node->As<Camera3D>();
+                    //LogDebug("test");
+                    SetActiveCamera(node->As<Camera3D>(),j);
+                    //mActiveCamera[j] = node->As<Camera3D>();
                     ++activeScreens;
                 }
             }
@@ -1323,10 +1323,8 @@ void World::Update(float deltaTime)
     if (mQueuedRootNode != nullptr)
     {
         mQueuedRootNode->Detach();
-
         DestroyRootNode();
         SetRootNode(mQueuedRootNode.Get());
-
         mQueuedRootNode.Reset();
     }
 
@@ -1584,7 +1582,7 @@ Camera3D* World::GetActiveCamera(uint32_t screenIndex)
         return editorCam;
     }
 #endif
-
+//LogDebug(mActiveCamera[screenIndex]->GetName().c_str());
     return mActiveCamera[screenIndex];
 }
 
@@ -1867,15 +1865,30 @@ Node* World::SpawnDefaultRoot()
 
 void World::ClearCameras()
 {
-    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
-    {
-        if (mActiveCamera[i] != nullptr)
-        {
-            mActiveCamera[i] = nullptr;
-        }
+
+    for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i) {mActiveCamera[i] = nullptr;}
 
 
-    }
+    // mActiveCamera.clear();
+    // for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
+    // {
+    //     mActiveCamera.push_back(nullptr);
+    // }
+    // for (Camera3D* camera : mActiveCamera)
+    // {
+    //     //free(camera);
+    //     camera = nullptr;
+    // }
+    // for (uint32_t i = 0 ; i < ::GetNumScreens() ; ++i)
+    // {
+    //     //LogDebug("Screen %s of %s", std::to_string(i).c_str(),std::to_string(::GetNumScreens()).c_str());
+    //     if (mActiveCamera[i] != nullptr)
+    //     {
+    //         free(mActiveCamera[i]);
+    //         mActiveCamera[i] = nullptr;
+    //     }
+    // }
+
 }
 
 void World::SetNewActiveCamera()
@@ -1895,7 +1908,18 @@ void World::SetNewActiveCamera()
 }
 
 
-
+bool World::ScreenTaken(int32_t screen)
+{
+    for (int i = 0; i < ::GetNumWorlds(); ++i)
+    {
+        if (::GetWorld(i)->GetActiveCamera(screen))
+        {
+            if (::GetWorld(i)->GetActiveCamera(screen)->IsEditorCamera()) return false;
+            return true;
+        }
+    }
+    return false;
+}
 
 
 
