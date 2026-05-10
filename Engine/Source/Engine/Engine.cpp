@@ -50,6 +50,7 @@ static EngineConfig sEngineConfig;
 
 static std::vector<World*> sWorlds;
 static Clock sClock;
+static uint32_t sScreens = 1;
 
 // Default scene names to try when no explicit scene is specified
 static std::vector<std::string> sDefaultSceneNames = {
@@ -412,13 +413,15 @@ bool Initialize()
 #endif
 
     sClock.Start();
-
-    sWorlds.push_back(new World());
-
 #if PLATFORM_3DS
     // So far only 3DS can support a second screen and we have a one-world-per-screen setup.
+    ++sScreens;
     sWorlds.push_back(new World());
 #endif
+    sWorlds.push_back(new World());
+
+
+
 
 
     Maths::SeedRand((uint32_t)SYS_GetTimeMicroseconds());
