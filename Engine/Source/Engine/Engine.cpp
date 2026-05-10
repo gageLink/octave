@@ -413,7 +413,7 @@ bool Initialize()
 #endif
 
     sClock.Start();
-#if PLATFORM_3DS
+#if PLATFORM_3DS //moving this above new world generations so they actually know how many screens they're working with
     // So far only 3DS can support a second screen and we have a one-world-per-screen setup.
     ++sScreens;
     sWorlds.push_back(new World());
@@ -608,9 +608,22 @@ bool Update()
     EditorImguiDraw();
 #endif
 
-    for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
+    for (int32_t i = 0; i < sScreens; ++i)
     {
-        Renderer::Get()->Render(sWorlds[i], i);
+        bool passed = false;
+        for (int32_t j = 0; j < int32_t(sWorlds.size()); ++j)
+        {
+            if (!passed)
+            {
+                sWorlds[j]->SetScreenCamera(i);
+                if (sWorlds[j]->GetActiveCamera())
+                {
+                    passed = true;
+                    Renderer::Get()->Render(sWorlds[j], i);
+                }
+            }
+        }
+        if (!passed) Renderer::Get()->Render(new World(), i);
     }
 
     AssetManager::Get()->Update(realDeltaTime);
@@ -694,6 +707,10 @@ World* GetWorld(int32_t index)
 int32_t GetNumWorlds()
 {
     return int32_t(sWorlds.size());
+}
+int32_t GetNumScreens()
+{
+    return sScreens;
 }
 
 EngineState* GetEngineState()

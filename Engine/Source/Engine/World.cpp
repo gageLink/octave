@@ -505,6 +505,7 @@ World::World() :
     SCOPED_STAT("World()")
 
     // Setup physics world
+    for (int32_t i = 0; i < ::GetNumScreens(); ++i) mScreenCamera.push_back(nullptr);
     mCollisionConfig = new btDefaultCollisionConfiguration();
     mCollisionDispatcher = new btCollisionDispatcher(mCollisionConfig);
     mBroadphase = new btDbvtBroadphase();
@@ -527,6 +528,7 @@ void World::Destroy()
 
     OCT_ASSERT(mRootNode == nullptr);
     mActiveCamera = nullptr;
+    for (Camera3D* camera : mScreenCamera) camera = nullptr;
 
     mDefaultDynamicsWorld = nullptr;
 
@@ -1193,10 +1195,9 @@ void World::RegisterNode(Node* node, bool subRoot)
     }
     else if (nodeType == Camera3D::GetStaticType())
     {
-        if (mActiveCamera == nullptr ||
-            mActiveCamera->IsEditorCamera())
+        if (!WorldSeen())
         {
-            mActiveCamera = node->As<Camera3D>();
+            FillBlankScreen(node->As<Camera3D>());
         }
     }
 
@@ -1232,10 +1233,12 @@ void World::UnregisterNode(Node* node, bool subRoot)
     {
         SetAudioReceiver(nullptr);
     }
-
-    if (node == mActiveCamera)
+    for (uint32_t i = 0; i < ::GetNumScreens(); ++i)
     {
-        SetActiveCamera(nullptr);
+        if (node == mScreenCamera[i])
+        {
+            mScreenCamera[i] = nullptr;
+        }
     }
 
     if (subRoot)
@@ -1575,15 +1578,15 @@ Node3D* World::GetAudioReceiver()
     return nullptr;
 }
 
-void World::SetActiveCamera(Camera3D* activeCamera)
+void World::SetActiveCamera(Camera3D* activeCamera, uint32_t screen)
 {
 #if EDITOR
     if (GetEditorState()->mEditorCamera != activeCamera)
     {
-        mActiveCamera = activeCamera;
+        mScreenCamera[screen] = activeCamera;
     }
 #else
-    mActiveCamera = activeCamera;
+    mScreenCamera[screen] = activeCamera;
 #endif
 }
 
@@ -1828,15 +1831,48 @@ Node* World::SpawnDefaultRoot()
 }
 
 
+void World::SetScreenCamera(uint32_t screen)
+{
+
+    mActiveCamera = mScreenCamera[screen];
+}
+
+void World::FillBlankScreen(Camera3D* camera)
+{
+    for (int32_t i = 0; i < ::GetNumScreens(); ++i)
+    {
+        bool taken = false;
+        for (int32_t j = 0; j < ::GetNumWorlds(); ++j)
+        {
+            if (::GetWorld(j)->GetScreenCamera(i))
+            {
+                taken = true;
+                j = ::GetNumWorlds();
+            }
+        }
+        if (!taken)
+        {
+            SetActiveCamera(camera, i);
+            return; //just the first open screen
+        }
+    }
+}
 
 
+Camera3D* World::GetScreenCamera(uint32_t screen)
+{
+    return mScreenCamera[screen];
+}
 
 
-
-
-
-
-
+bool World::WorldSeen()
+{
+    for (Camera3D* camera : mScreenCamera)
+    {
+        if ((camera) && !(camera->IsEditorCamera())) return true;
+    }
+    return false;
+}
 
 
 
