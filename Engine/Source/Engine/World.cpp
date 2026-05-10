@@ -1914,7 +1914,7 @@ bool World::ScreenTaken(int32_t screen)
         if (::GetWorld(i)->GetActiveCamera(screen))
         {
             if (::GetWorld(i)->GetActiveCamera(screen)->IsEditorCamera()) return false;
-            if (!::GetWorld(i)->GetActiveCamera(screen)->GetWorld() == ::GetWorld(i)) return false;
+            if (!(::GetWorld(i)->GetActiveCamera(screen)->GetWorld() == ::GetWorld(i))) return false;
             return true;
         }
     }
