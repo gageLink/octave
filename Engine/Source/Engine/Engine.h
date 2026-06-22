@@ -78,6 +78,9 @@ void ResetEngineConfig();
 
 void ReadCommandLineArgs(int32_t argc, char** argv);
 
+uint8_t GetScreenConfig(uint32_t screenIndex = 0);
+void SetScreenConfig(uint8_t screenConfig, uint32_t screenIndex = 0);
+
 
 #if LUA_ENABLED
 lua_State* GetLua();

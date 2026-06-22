@@ -207,6 +207,27 @@ int Engine_Lua::GarbageCollect(lua_State* L)
     return 0;
 }
 
+int Engine_Lua::GetScreenConfig(lua_State* L)
+{
+    int32_t screenIndex = 0;
+    if (!lua_isnone(L, 1)) { screenIndex = CHECK_NUMBER(L, 1); };
+
+    uint8_t ret = ::GetScreenConfig(screenIndex);
+
+    lua_pushnumber(L, ret);
+    return 1;
+}
+int Engine_Lua::SetScreenConfig(lua_State* L)
+{
+    uint8_t screenConfig = CHECK_NUMBER(L, 1);
+    int32_t screenIndex = 0;
+    if (!lua_isnone(L, 2)) { screenIndex = CHECK_NUMBER(L, 2); };
+
+    ::SetScreenConfig(screenConfig, screenIndex);
+
+    return 0;
+}
+
 void Engine_Lua::Bind()
 {
     lua_State* L = GetLua();
@@ -259,6 +280,10 @@ void Engine_Lua::Bind()
     REGISTER_TABLE_FUNC(L, tableIdx, GetTimeDilation);
 
     REGISTER_TABLE_FUNC(L, tableIdx, GarbageCollect);
+
+    REGISTER_TABLE_FUNC(L, tableIdx, SetScreenConfig);
+
+    REGISTER_TABLE_FUNC(L, tableIdx, GetScreenConfig);
 
     lua_setglobal(L, "Engine");
 

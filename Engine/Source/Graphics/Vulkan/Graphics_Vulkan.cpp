@@ -160,7 +160,7 @@ void GFX_ResizeWindow()
 
 void GFX_Reset()
 {
-    if (gVulkanContext != nullptr)
+    if (gVulkanContext != nullptr && Renderer::Get()->GetSubScreenIndex() == 0)
     {
         gVulkanContext->RecreateSwapchain(true);
     }

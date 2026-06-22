@@ -268,6 +268,11 @@ uint32_t Renderer::GetScreenIndex() const
     return mScreenIndex;
 }
 
+uint32_t Renderer::GetSubScreenIndex() const
+{
+    return mSubScreenIndex;
+}
+
 bool Renderer::IsRenderingFirstScreen() const
 {
     return (mScreenIndex == 0);
@@ -276,8 +281,46 @@ bool Renderer::IsRenderingFirstScreen() const
 bool Renderer::IsRenderingLastScreen() const
 {
 #if SUPPORTS_SECOND_SCREEN
+    // switch (GetScreenConfig(mScreenIndex))
+    // {
+    //     case 0:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 0);
+    //     case 1:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 1);
+    //     case 2:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 1);
+    //     case 3:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 2);
+    //     case 4:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 2);
+    //     case 5:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 2);
+    //     case 6:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 2);
+    //     case 7:
+    //         return (mScreenIndex == 1 && mSubScreenIndex == 3);
+    // }
     return mScreenIndex == 1;
 #else
+    // switch (GetScreenConfig(mScreenIndex))
+    // {
+    //     case 0:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 0);
+    //     case 1:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 1);
+    //     case 2:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 1);
+    //     case 3:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 2);
+    //     case 4:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 2);
+    //     case 5:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 2);
+    //     case 6:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 2);
+    //     case 7:
+    //         return (mScreenIndex == 0 && mSubScreenIndex == 3);
+    // }
     return mScreenIndex == 0;
 #endif
 }
@@ -494,7 +537,6 @@ void Renderer::GatherDrawData(World* world)
         }
     }
 #endif
-
     mShadowDraws.clear();
     mOpaqueDraws.clear();
     mSimpleShadowDraws.clear();
@@ -1174,8 +1216,13 @@ int32_t Renderer::FrustumCullLights(const CameraFrustum& frustum, std::vector<Li
     return lightsCulled;
 }
 
-void Renderer::Render(World* world, int32_t screenIndex)
+void Renderer::Render(World* world, int32_t screenIndex, uint32_t subScreenIndex)
 {
+    if (subScreenIndex == 2)
+    {
+        LogDebug("yeap");
+        getchar();
+    }
     if (world == nullptr ||
         GetEngineState()->mConsoleMode)
     {
@@ -1185,6 +1232,7 @@ void Renderer::Render(World* world, int32_t screenIndex)
 
     mCurrentWorld = world;
     mScreenIndex = screenIndex;
+    mSubScreenIndex = subScreenIndex;
 
     bool inGame = IsGameTickEnabled();
     float gameDeltaTime = GetEngineState()->mGameDeltaTime;
@@ -1245,7 +1293,7 @@ void Renderer::Render(World* world, int32_t screenIndex)
 
             GatherLightData(world);
 
-            if (mFrustumCulling)
+            if (mFrustumCulling && subScreenIndex == 0)
             {
                 FrustumCull(activeCamera);
             }
@@ -1268,8 +1316,10 @@ void Renderer::Render(World* world, int32_t screenIndex)
         {
             GFX_UpdateLightBake();
         }
-
-        GFX_BeginScreen(mScreenIndex);
+        if (subScreenIndex == 0)
+        {
+            GFX_BeginScreen(mScreenIndex);
+        }
 
         uint32_t numViews = GFX_GetNumViews();
 
@@ -1289,11 +1339,23 @@ void Renderer::Render(World* world, int32_t screenIndex)
             uint32_t sceneViewportWidth = svp.z;
             uint32_t sceneViewportHeight = svp.w;
 
+
             // The regular viewport matches the swapchain image. Used in UI rendering.
             uint32_t viewportX = vp.x;
             uint32_t viewportY = vp.y;
             uint32_t viewportWidth = vp.z;
             uint32_t viewportHeight = vp.w;
+
+            windowWidth = vp.z;
+            windowHeight = vp.w;
+            uint32_t windowX = vp.x;
+            uint32_t windowY = vp.y;
+
+            if (subScreenIndex == 2)
+            {
+                LogDebug("yeac");
+                getchar();
+            }
 
             if (enable3D && activeCamera != nullptr)
             {
@@ -1305,6 +1367,12 @@ void Renderer::Render(World* world, int32_t screenIndex)
                     GFX_EndRenderPass();
 
                     GFX_PathTrace();
+
+                    if (subScreenIndex == 2)
+                    {
+                        LogDebug("yead");
+                        getchar();
+                    }
                 }
                 else
                 {
@@ -1363,31 +1431,39 @@ void Renderer::Render(World* world, int32_t screenIndex)
                     }
 
                     GFX_DrawLines(world->GetLines());
-
                     GFX_EndRenderPass();
+                    if (subScreenIndex == 2)
+                    {
+                        LogDebug("yead");
+                        getchar();
+                    }
                 }
 
                 // ******************
                 //  Post Process
                 // ******************
 
-                GFX_SetViewport(0, 0, windowWidth, windowHeight);
-                GFX_SetScissor(0, 0, windowWidth, windowHeight);
+                GFX_SetViewport(windowX, windowY, windowWidth, windowHeight);
+                GFX_SetScissor(windowX, windowY, windowWidth, windowHeight);
 
                 GFX_RenderPostProcessPasses();
 
-#if EDITOR
+                #if EDITOR
                 GFX_BeginRenderPass(RenderPassId::Selected);
 
                 GFX_SetViewport(viewportX, viewportY, viewportWidth, viewportHeight);
                 GFX_SetScissor(viewportX, viewportY, viewportWidth, viewportHeight);
 
                 RenderSelectedGeometry(world);
-
                 GFX_EndRenderPass();
 #endif
                 GFX_SetViewport(sceneViewportX, sceneViewportY, sceneViewportWidth, sceneViewportHeight);
                 GFX_SetScissor(sceneViewportX, sceneViewportY, sceneViewportWidth, sceneViewportHeight);
+                if (subScreenIndex == 2)
+                {
+                    LogDebug("yeae");
+                    getchar();
+                }
             }
             else
             {
@@ -1395,6 +1471,11 @@ void Renderer::Render(World* world, int32_t screenIndex)
                 GFX_SetScissor(sceneViewportX, sceneViewportY, sceneViewportWidth, sceneViewportHeight);
                 GFX_BeginRenderPass(RenderPassId::Clear);
                 GFX_EndRenderPass();
+            }
+            if (subScreenIndex == 2)
+            {
+                LogDebug("yeaf");
+                getchar();
             }
 
             // ******************
@@ -1404,6 +1485,11 @@ void Renderer::Render(World* world, int32_t screenIndex)
             GFX_BeginRenderPass(RenderPassId::Ui);
             RenderDraws(mWidgetDraws);
             GFX_EndRenderPass();
+            if (subScreenIndex == 2)
+            {
+                LogDebug("yeag");
+                getchar();
+            }
         }
 
         END_FRAME_STAT("Render");
@@ -1415,10 +1501,21 @@ void Renderer::Render(World* world, int32_t screenIndex)
             EndFrame();
         }
     }
-
+    if (subScreenIndex == 2)
+    {
+        LogDebug("yeah");
+        getchar();
+    }
     UpdateDebugDraws();
 
     mCurrentWorld = nullptr;
+
+
+    if (subScreenIndex == 2)
+    {
+        LogDebug("yeab");
+        getchar();
+    }
 }
 
 void Renderer::RenderShadowCasters(World* world)
@@ -1682,22 +1779,96 @@ uint32_t Renderer::GetViewportX(int32_t screenIdx)
 {
     OCT_UNUSED(screenIdx);
 
+
+    uint32_t vpX = 0;
+
 #if EDITOR
-    return (IsPlayingInEditor() && !GetEditorState()->mEjected) ? 0 : GetEditorState()->mViewportX;
-#else
-    return uint32_t(0);
+    vpX = (IsPlayingInEditor() && !GetEditorState()->mEjected) ? 0 : GetEditorState()->mViewportX;
 #endif
+    if (screenIdx == -1)
+    {
+        screenIdx = mScreenIndex;
+    }
+    uint32_t halfWidth = GetViewportWidth(screenIdx);
+
+    uint8_t screenConfig = GetScreenConfig(screenIdx);
+    switch (screenConfig)
+    {
+        case 2:
+            if (mSubScreenIndex == 1)
+                vpX += halfWidth;
+            break;
+        case 3:
+            if (mSubScreenIndex == 1)
+                vpX += halfWidth;
+            break;
+        case 4:
+            if (mSubScreenIndex == 1)
+                vpX += halfWidth;
+            break;
+        case 5:
+            if (mSubScreenIndex == 1)
+                vpX += halfWidth;
+            break;
+        case 6:
+            if (mSubScreenIndex == 1 ||mSubScreenIndex == 2)
+                vpX += halfWidth;
+            break;
+        case 7:
+            if (mSubScreenIndex == 1 ||mSubScreenIndex == 2)
+                vpX += halfWidth;
+            break;
+    }
+
+    return vpX;
 }
 
 uint32_t Renderer::GetViewportY(int32_t screenIdx)
 {
     OCT_UNUSED(screenIdx);
 
+    uint32_t vpY = 0;
+
 #if EDITOR
-    return (IsPlayingInEditor() && !GetEditorState()->mEjected) ? 0 : GetEditorState()->mViewportY;
-#else
-    return uint32_t(0);
+    vpY =  (IsPlayingInEditor() && !GetEditorState()->mEjected) ? 0 : GetEditorState()->mViewportY;
 #endif
+    if (screenIdx == -1)
+    {
+        screenIdx = mScreenIndex;
+    }
+
+    uint32_t halfHeight = GetViewportHeight(screenIdx);
+
+    uint8_t screenConfig = GetScreenConfig(screenIdx);
+    switch (screenConfig)
+    {
+        case 1:
+            if (mSubScreenIndex != 0)
+                vpY += halfHeight;
+            break;
+        case 3:
+            if (mSubScreenIndex == 2)
+                vpY += halfHeight;
+            break;
+        case 4:
+            if (mSubScreenIndex != 0)
+                vpY += halfHeight;
+            break;
+        case 5:
+            if (mSubScreenIndex == 2)
+                vpY += halfHeight;
+            break;
+        case 6:
+            if (mSubScreenIndex == 2)
+                vpY += halfHeight;
+            break;
+        case 7:
+            if (mSubScreenIndex == 3 ||mSubScreenIndex == 2)
+                vpY += halfHeight;
+            break;
+    }
+    return vpY;
+
 }
 
 uint32_t Renderer::GetViewportWidth(int32_t screenIdx)
@@ -1709,9 +1880,35 @@ uint32_t Renderer::GetViewportWidth(int32_t screenIdx)
 
     uint32_t windowWidth = (screenIdx == 0) ? GetEngineState()->mWindowWidth : GetEngineState()->mSecondWindowWidth;
 
+
 #if EDITOR
     windowWidth = (IsPlayingInEditor() && !GetEditorState()->mEjected) ? windowWidth : GetEditorState()->mViewportWidth;
 #endif
+
+    uint8_t screenConfig = GetScreenConfig(screenIdx);
+    switch (screenConfig)
+    {
+        case 2:
+            windowWidth /= 2;
+            break;
+        case 3:
+            if (mSubScreenIndex < 2)
+                windowWidth /= 2;
+        break;
+        case 4:
+            if (mSubScreenIndex > 0)
+                windowWidth /= 2;
+        break;
+        case 5:
+            windowWidth /= 2;
+            break;
+        case 6:
+            windowWidth /= 2;
+            break;
+        case 7:
+            windowWidth /= 2;
+            break;
+    }
 
     windowWidth = glm::max<uint32_t>(windowWidth, 1);
     return windowWidth;
@@ -1728,7 +1925,32 @@ uint32_t Renderer::GetViewportHeight(int32_t screenIdx)
 
 #if EDITOR
     windowHeight = (IsPlayingInEditor() && !GetEditorState()->mEjected) ? windowHeight : GetEditorState()->mViewportHeight;
-#endif
+    #endif
+
+    uint8_t screenConfig = GetScreenConfig(screenIdx);
+    switch (screenConfig)
+    {
+        case 1:
+            windowHeight /= 2;
+            break;
+        case 3:
+            windowHeight /= 2;
+            break;
+        case 4:
+            windowHeight /= 2;
+            break;
+        case 5:
+            if (mSubScreenIndex != 1)
+                windowHeight /= 2;
+        break;
+        case 6:
+            if (mSubScreenIndex > 0)
+                windowHeight /= 2;
+        break;
+        case 7:
+            windowHeight /= 2;
+            break;
+    }
 
     windowHeight = glm::max<uint32_t>(windowHeight, 1);
     return windowHeight;

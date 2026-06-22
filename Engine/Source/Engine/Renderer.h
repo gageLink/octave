@@ -37,7 +37,7 @@ public:
     static void Destroy();
     static Renderer* Get();
 
-    void Render(World* world, int32_t screenIndex);
+    void Render(World* world, int32_t screenIndex, uint32_t subScreenIndex = 0);
     ~Renderer();
     void Initialize();
 
@@ -57,6 +57,7 @@ public:
     uint32_t GetFrameNumber() const;
     uint32_t GetFrameIndex() const;
     uint32_t GetScreenIndex() const;
+    uint32_t GetSubScreenIndex() const;
     bool IsRenderingFirstScreen() const;
     bool IsRenderingLastScreen() const;
     World* GetCurrentWorld();
@@ -219,6 +220,7 @@ private:
     World* mCurrentWorld = nullptr;
     uint32_t mFrameIndex = 0;
     uint32_t mScreenIndex = 0;
+    uint32_t mSubScreenIndex = 0;
     uint32_t mFrameNumber = 0;
     float mGlobalUiScale = 1.0f;
     DebugMode mDebugMode = DEBUG_NONE;

@@ -462,8 +462,9 @@ void RayTracer::PathTraceWorld()
         BindPathTraceDescriptorSet();
 
         // TODO-NODE: Should we use viewport instead?
-        uint32_t width = GetEngineState()->mWindowWidth;
-        uint32_t height = GetEngineState()->mWindowHeight;
+        uint32_t width = Renderer::Get()->GetViewportWidth();
+
+        uint32_t height = Renderer::Get()->GetViewportHeight();
 
         vkCmdDispatch(cb, (width + 7) / 8, (height + 7) / 8, 1);
 

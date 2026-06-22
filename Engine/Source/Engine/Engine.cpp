@@ -50,6 +50,7 @@ static EngineConfig sEngineConfig;
 
 static std::vector<World*> sWorlds;
 static Clock sClock;
+static std::vector<uint8_t> sScreenConfig;
 
 // Default scene names to try when no explicit scene is specified
 static std::vector<std::string> sDefaultSceneNames = {
@@ -414,10 +415,12 @@ bool Initialize()
     sClock.Start();
 
     sWorlds.push_back(new World());
+    sScreenConfig.push_back(0);
 
 #if PLATFORM_3DS
     // So far only 3DS can support a second screen and we have a one-world-per-screen setup.
     sWorlds.push_back(new World());
+    sScreenConfig.push_back(0);
 #endif
 
 
@@ -607,7 +610,12 @@ bool Update()
 
     for (int32_t i = 0; i < int32_t(sWorlds.size()); ++i)
     {
-        Renderer::Get()->Render(sWorlds[i], i);
+        for (uint32_t j = 0; j < (std::floor(std::log2(sScreenConfig[i] + 1)) + 1); ++j)
+        {
+            Renderer::Get()->Render(sWorlds[i], i, j);
+        }
+        //Renderer::Get()->Render(sWorlds[i], i);
+
     }
 
     AssetManager::Get()->Update(realDeltaTime);
@@ -1203,6 +1211,25 @@ void ResetEngineConfig()
 {
     sEngineConfig = EngineConfig();
 }
+
+uint8_t GetScreenConfig(uint32_t screenIndex)
+{
+    if (screenIndex < sScreenConfig.size() && sScreenConfig.size() > 0)
+    {
+        return sScreenConfig[screenIndex];
+    }
+    else
+        return 0;
+}
+
+void SetScreenConfig(uint8_t screenConfig, uint32_t screenIndex)
+{
+    if (screenIndex < sScreenConfig.size() && sScreenConfig.size() > 0)
+    {
+        sScreenConfig[screenIndex] = screenConfig;
+    }
+}
+
 
 #if LUA_ENABLED
 lua_State* GetLua()

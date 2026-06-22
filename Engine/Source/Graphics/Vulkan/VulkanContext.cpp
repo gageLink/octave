@@ -331,6 +331,11 @@ void VulkanContext::BeginFrame()
 
 void VulkanContext::EndFrame()
 {
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teest");
+        getchar();
+    }
     VkCommandBuffer cb = GetCommandBuffer();
 
     if (vkEndCommandBuffer(cb) != VK_SUCCESS)
@@ -352,6 +357,11 @@ void VulkanContext::EndFrame()
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cb;
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teestc");
+        getchar();
+    }
 
     VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphore[mFrameIndex] };
     submitInfo.signalSemaphoreCount = 1;
@@ -361,6 +371,13 @@ void VulkanContext::EndFrame()
     {
         LogError("Failed to submit draw command buffer");
         OCT_ASSERT(0);
+    }
+
+
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teestd");
+        getchar();
     }
 
     VkPresentInfoKHR presentInfo = {};
@@ -373,7 +390,21 @@ void VulkanContext::EndFrame()
     presentInfo.pImageIndices = &mSwapchainImageIndex;
     presentInfo.pResults = nullptr;
 
+
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teeste");
+        getchar();
+    }
+
     VkResult presentResult = vkQueuePresentKHR(mPresentQueue, &presentInfo);
+
+
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teestf");
+        getchar();
+    }
 
     if (!IsShuttingDown() &&
         (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR))
@@ -382,6 +413,13 @@ void VulkanContext::EndFrame()
     }
 
     uint32_t nextFrameIndex = (mFrameIndex + 1) % MAX_FRAMES;
+
+
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teestb");
+        getchar();
+    }
 
     // Ensure this command buffer has finished executing on the GPU
     vkWaitForFences(mDevice, 1, &mWaitFences[nextFrameIndex], VK_TRUE, UINT64_MAX);
@@ -401,6 +439,13 @@ void VulkanContext::EndFrame()
         mRayTracer.GetLightBakePhase() != LightBakePhase::Count)
     {
         mRayTracer.ReadbackLightBakeResults();
+    }
+
+
+    if (Renderer::Get()->GetSubScreenIndex() == 2)
+    {
+        LogDebug("teesta");
+        getchar();
     }
 }
 
@@ -2126,6 +2171,8 @@ VkPresentModeKHR VulkanContext::ChooseSwapPresentMode(const std::vector<VkPresen
 VkExtent2D VulkanContext::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
     VkExtent2D retExtent = capabilities.currentExtent;
+    LogDebug("testa");
+    //retExtent = { Renderer::Get()->GetScreenResolution().x, Renderer::Get()->GetScreenResolution().y };
 
 #if PLATFORM_ANDROID
     retExtent.width = capabilities.currentExtent.width;
@@ -2145,7 +2192,9 @@ VkExtent2D VulkanContext::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capab
     // Not entirely sure what this if statement is doing yet.
     if (retExtent.width == std::numeric_limits<uint32_t>::max())
     {
-        retExtent = { mEngineState->mWindowWidth, mEngineState->mWindowHeight };
+        LogDebug("testy");
+        retExtent = { Renderer::Get()->GetScreenResolution().x, Renderer::Get()->GetScreenResolution().y };
+        //retExtent = { mEngineState->mWindowWidth, mEngineState->mWindowHeight };
 
         retExtent.width = glm::clamp(retExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
         retExtent.height = glm::clamp(retExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
